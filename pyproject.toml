@@ -1,0 +1,18 @@
+[project]
+name = "mid-term-project"
+version = "0.1.0"
+description = "Housing Prices Prediction"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.121.2",
+    "numpy>=2.3.4",
+    "scikit-learn>=1.7.2",
+    "uvicorn>=0.38.0",
+    "xgboost>=3.1.1",
+]
+
+[dependency-groups]
+dev = [
+    "requests>=2.32.5",
+]
