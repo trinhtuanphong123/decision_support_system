@@ -25,7 +25,7 @@ wheels/
 
 # Jupyter Notebook
 .ipynb_checkpoints
-*.ipynb
+# *.ipynb  # ← Commented out to allow notebooks in model_training/
 
 # PyCharm
 .idea/
