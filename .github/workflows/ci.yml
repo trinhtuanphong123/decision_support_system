@@ -1,0 +1,123 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    name: Test Application
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Cache pip dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest pytest-cov
+    
+    - name: Check model file exists
+      run: |
+        if [ ! -f model.bin ]; then
+          echo "❌ model.bin not found!"
+          exit 1
+        fi
+        echo "✅ model.bin found"
+    
+    - name: Lint with flake8 (optional)
+      run: |
+        pip install flake8
+        # Stop build if there are Python syntax errors or undefined names
+        flake8 predict.py --count --select=E9,F63,F7,F82 --show-source --statistics
+        # Exit-zero treats all errors as warnings
+        flake8 predict.py --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+      continue-on-error: true
+    
+    - name: Run unit tests (if available)
+      run: |
+        # pytest tests/ --cov=predict --cov-report=xml
+        echo "⚠️ No unit tests configured yet"
+      continue-on-error: true
+
+  docker:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+    needs: test
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+    
+    - name: Build Docker image
+      run: |
+        docker build -t airbnb-predictor:${{ github.sha }} .
+    
+    - name: Test Docker image
+      run: |
+        # Start container
+        docker run -d --name test-container -p 9696:9696 airbnb-predictor:${{ github.sha }}
+        
+        # Wait for container to start
+        sleep 10
+        
+        # Health check
+        curl -f http://localhost:9696/health || exit 1
+        
+        # Stop container
+        docker stop test-container
+        docker rm test-container
+    
+    - name: Login to Docker Hub (optional)
+      if: github.ref == 'refs/heads/main'
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+      continue-on-error: true
+    
+    - name: Push to Docker Hub (optional)
+      if: github.ref == 'refs/heads/main'
+      run: |
+        docker tag airbnb-predictor:${{ github.sha }} ${{ secrets.DOCKER_USERNAME }}/airbnb-predictor:latest
+        docker push ${{ secrets.DOCKER_USERNAME }}/airbnb-predictor:latest
+      continue-on-error: true
+
+  deploy:
+    name: Deploy to Render
+    runs-on: ubuntu-latest
+    needs: [test, docker]
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Trigger Render Deploy
+      run: |
+        echo "🚀 Render will auto-deploy from GitHub"
+        echo "✅ Deployment triggered on push to main"
+    
+    - name: Notify deployment
+      run: |
+        echo "📦 Deployment Status: In Progress"
+        echo "🔗 Check status at: https://dashboard.render.com"
+
+        

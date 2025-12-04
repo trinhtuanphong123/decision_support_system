@@ -1,277 +1,473 @@
-# 🏠 NYC Airbnb Price Prediction
+# 🏠 NYC Airbnb Price Prediction API
 
-### *Machine Learning Model for Predicting Airbnb Listing Prices in New York City*
+> Machine Learning API for predicting Airbnb listing prices in New York City
 
-![Python](https://img.shields.io/badge/Python-3.10+-blue.svg)\
-![FastAPI](https://img.shields.io/badge/FastAPI-API%20Service-teal.svg)\
-![Docker](https://img.shields.io/badge/Docker-Containerized%20App-blue.svg)\
-![Fly.io](https://img.shields.io/badge/Deployment-Fly.io-purple.svg)\
-![License](https://img.shields.io/badge/License-MIT-green.svg)
+[![Python](https://img.shields.io/badge/Python-3.11-blue.svg)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.121.2-009688.svg)](https://fastapi.tiangolo.com/)
+[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg)](https://www.docker.com/)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-## 📘 Overview
+**Live Demo**: [https://airbnb-price-predictor-v41y.onrender.com/docs](https://airbnb-price-predictor-v41y.onrender.com/docs)
 
-This repository contains a complete machine learning pipeline to
-**predict nightly Airbnb prices in New York City** using listing
-metadata such as location, room type, availability, and accommodation
-capacity.
+---
 
-The project includes:
+## 📋 Table of Contents
 
--   Data exploration and preprocessing\
--   Model training and comparison\
--   Deployment using FastAPI\
--   Cloud hosting using Fly.io\
--   Fully containerized workflow via Docker
+- [Overview](#overview)
+- [Features](#features)
+- [Tech Stack](#tech-stack)
+- [Quick Start](#quick-start)
+- [API Documentation](#api-documentation)
+- [Model Performance](#model-performance)
+- [Project Structure](#project-structure)
+- [Development](#development)
+- [Deployment](#deployment)
+- [Contributing](#contributing)
+- [License](#license)
 
-------------------------------------------------------------------------
+---
 
-## 📌 Problem Definition
+## 🎯 Overview
 
-The objective is to develop a regression model capable of **estimating
-nightly Airbnb listing prices** using structured listing information.
+This project provides a REST API for predicting nightly Airbnb listing prices in New York City using machine learning. The model is trained on the [NYC Airbnb Open Data](https://www.kaggle.com/datasets/dgomonov/new-york-city-airbnb-open-data) dataset.
 
-The features leveraged include:
+### Problem Statement
 
--   **Location** (borough → encoded)\
--   **Room type**\
--   **Minimum nights**\
--   **Number of reviews**\
--   **Availability throughout the year**\
--   **Accommodation capacity**
+Predict the nightly price of Airbnb listings based on:
+- Location (neighbourhood)
+- Room type
+- Minimum nights required
+- Host's total listings
+- Availability throughout the year
 
-Accurate predictions assist both **hosts** (pricing strategies) and
-**guests** (price expectation).
+---
 
-------------------------------------------------------------------------
+## ✨ Features
 
-## 📂 Dataset
+- 🤖 **XGBoost ML Model** with RMSE of 0.482
+- ⚡ **Fast API** with automatic OpenAPI documentation
+- 🐳 **Docker Support** for easy deployment
+- 🔒 **Input Validation** using Pydantic models
+- 📊 **Health Checks** and monitoring endpoints
+- 🌐 **CORS Enabled** for web integration
+- 🎨 **Swagger UI** for interactive API testing
 
-This project uses the **New York City Airbnb Open Data** from Kaggle:
+---
 
-https://www.kaggle.com/datasets/dgomonov/new-york-city-airbnb-open-data/data
+## 🛠️ Tech Stack
 
-> A local copy (`AB_NYC_2019.csv`) is already included in the
-> repository.
+| Category | Technology |
+|----------|------------|
+| **ML Framework** | XGBoost, scikit-learn |
+| **API Framework** | FastAPI, Uvicorn |
+| **Language** | Python 3.11 |
+| **Containerization** | Docker |
+| **Deployment** | Render.com |
+| **Data Processing** | NumPy, Pandas |
 
-------------------------------------------------------------------------
+---
 
-## 🧠 Model Development
+## 🚀 Quick Start
 
-The following models were trained and evaluated:
+### Prerequisites
 
--   **Linear Regression**\
--   **Decision Tree Regressor**\
--   **Random Forest Regressor**\
--   **Gradient Boosting Regressor**\
--   **XGBoost Regressor**
+- Python 3.11+
+- Docker (optional but recommended)
+- Git
 
-After comparison, the best model was exported as:\
-👉 **model.bin**
+### Option 1: Local Setup (without Docker)
 
-------------------------------------------------------------------------
+```bash
+# Clone the repository
+git clone https://github.com/YOUR_USERNAME/nyc-airbnb-prediction.git
+cd nyc-airbnb-prediction
 
-## 📊 Model Evaluation
+# Create virtual environment
+python3.11 -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
 
-The evaluation metric used is:
+# Install dependencies
+pip install -r requirements.txt
 
-### ✔️ RMSE --- Root Mean Squared Error
+# Run the application
+python predict.py
 
-This measures the average deviation between predicted and actual listing
-prices.
-
-------------------------------------------------------------------------
-
-## 🔮 Predictions & Insights
-
-The trained model can be used to predict Airbnb prices in NYC given a
-set of listing features.\
-The deployed API allows real-time evaluations of listing prices.
-
-------------------------------------------------------------------------
-
-## 🏗️ System Architecture
-
-                +------------------+
-                |  Airbnb Dataset  |
-                +--------+---------+
-                         |
-                         v
-                +------------------+
-                | Data Processing  |
-                |  & Feature Eng.  |
-                +--------+---------+
-                         |
-                         v
-                +------------------+
-                |  Model Training  |
-                | (Multiple Models)|
-                +--------+---------+
-                         |
-                         v
-                +------------------+
-                |  Best Model      |
-                |   model.bin      |
-                +--------+---------+
-                         |
-                         v
-            +--------------------------------+
-            | FastAPI Service (predict.py)   |
-            +----------------+---------------+
-                             |
-                             v
-                  +----------------------+
-                  |  Fly.io Deployment   |
-                  +----------+-----------+
-                             |
-                             v
-                    User → API → Prediction
-
-------------------------------------------------------------------------
-
-## 📁 Repository Structure
-
-  -----------------------------------------------------------------------------
-  File                         Description
-  ---------------------------- ------------------------------------------------
-  **AB_NYC_2019.csv**          Dataset used for training/testing
-
-  **Dockerfile**               Docker image config
-
-  **model.bin**                Pickled final model
-
-  **Mid_Term_Project.ipynb**   Full EDA + model comparison
-
-  **Model_Deploy.ipynb**       Notebook generating model.bin
-
-  **pyproject.toml**,          Environment files for dependency management
-  **uv.lock**                  
-
-  **predict.py**               FastAPI prediction service
-
-  **train.py**                 Model training script
-
-  **test.py**                  API testing script
-
-  **requirements.txt**         Project dependencies
-
-  **fly.toml**                 Configuration file generated for the deployed project: little-glade-5122
-
-
-
-------------------------------------------------------------------------
-
-## ▶️ Running the Project Locally
-
-### **Prerequisites**
-
--   Python 3.x\
--   Jupyter Notebook\
--   VS Code (optional)\
--   `uv` dependency manager\
--   FastAPI\
--   Docker (optional for deployment)
-
-------------------------------------------------------------------------
-
-### **Steps**
-
-#### 1. Clone the repository
-
-``` bash
-git clone https://github.com/juangrau/DTC-ML-course.git
-cd DTC-ML-course
+# API will be available at http://localhost:9696
 ```
 
-#### 2. (Optional) Build & run the Docker container
+### Option 2: Docker (Recommended)
 
-``` bash
-docker build -t predict-house-prices .
-docker run -it -p 9696:9696 predict-house-prices:latest
+```bash
+# Clone the repository
+git clone https://github.com/YOUR_USERNAME/nyc-airbnb-prediction.git
+cd nyc-airbnb-prediction
+
+# Build Docker image
+docker build -t airbnb-predictor .
+
+# Run container
+docker run -d -p 9696:9696 --name airbnb-api airbnb-predictor
+
+# Check logs
+docker logs -f airbnb-api
+
+# API will be available at http://localhost:9696
 ```
 
-#### 3. Test the model locally
+### Test the API
 
-``` bash
-python test.py
+```bash
+# Health check
+curl http://localhost:9696/health
+
+# Make a prediction
+curl -X POST http://localhost:9696/predict \
+  -H "Content-Type: application/json" \
+  -d '{
+    "neighbourhood_group": "manhattan",
+    "room_type": "entire home/apt",
+    "minimum_nights": 3,
+    "calculated_host_listings_count": 5,
+    "availability_365": 200
+  }'
 ```
 
-#### 4. Open FastAPI UI
+---
 
-    http://localhost:9696/docs#/default/predict_predict_post
+## 📚 API Documentation
 
-------------------------------------------------------------------------
+### Base URL
+- **Local**: `http://localhost:9696`
+- **Production**: `https://airbnb-price-predictor-v41y.onrender.com`
 
-## ☁️ Cloud Deployment (Fly.io)
+### Endpoints
 
-The model is deployed publicly here:
+#### 1. Root
+```http
+GET /
+```
 
-👉
-**https://little-glade-5122.fly.dev/docs#/default/predict_predict_post**
-
-You can send requests directly to this endpoint.
-
-------------------------------------------------------------------------
-
-## 🔑 API Feature Encodings
-
-### **Neighborhood Encoding**
-
-``` json
+**Response:**
+```json
 {
-  "manhattan": 1,
-  "brooklyn": 0,
-  "queens": 2,
-  "bronx": 4,
-  "staten island": 3,
-  "staten_island": 3
+  "message": "NYC Airbnb Price Prediction API",
+  "version": "1.0.0",
+  "endpoints": {
+    "health": "/health",
+    "predict": "/predict (POST)",
+    "docs": "/docs"
+  }
 }
 ```
 
-### **Room Type Encoding**
+#### 2. Health Check
+```http
+GET /health
+```
 
-``` json
+**Response:**
+```json
 {
-  "entire home/apt": 1,
-  "entire_home/apt": 1,
-  "private room": 0,
-  "private_room": 0,
-  "shared room": 2,
-  "shared_room": 2
+  "status": "healthy",
+  "model_loaded": true,
+  "version": "1.0.0"
 }
 ```
 
-------------------------------------------------------------------------
+#### 3. Predict Price
+```http
+POST /predict
+Content-Type: application/json
+```
 
-## 🧪 Example API Request
-
-### **POST** `/predict`
-
-``` json
+**Request Body:**
+```json
 {
   "neighbourhood_group": "manhattan",
   "room_type": "entire home/apt",
   "minimum_nights": 3,
-  "calculated_host_listings_count": 120,
-  "availability_365": 45
+  "calculated_host_listings_count": 5,
+  "availability_365": 200
 }
 ```
 
-### Example Response
+**Input Fields:**
 
-``` json
+| Field | Type | Options | Description |
+|-------|------|---------|-------------|
+| `neighbourhood_group` | string/int | manhattan, brooklyn, queens, bronx, staten island | NYC borough |
+| `room_type` | string/int | entire home/apt, private room, shared room | Type of accommodation |
+| `minimum_nights` | int | 0-365 | Minimum nights required |
+| `calculated_host_listings_count` | int | 0-N | Total listings by host |
+| `availability_365` | int | 0-365 | Days available per year |
+
+**Response:**
+```json
 {
-  "predicted_price": 210.56
+  "price_prediction": 157.42
 }
 ```
 
-------------------------------------------------------------------------
+#### 4. Get Valid Encodings
+```http
+GET /encodings
+```
 
-## 🚀 Future Enhancements
+**Response:**
+```json
+{
+  "neighbourhood_group": ["manhattan", "brooklyn", "queens", "bronx", "staten island"],
+  "room_type": ["entire home/apt", "private room", "shared room"]
+}
+```
 
--   Bayesian hyperparameter optimization\
--   More advanced feature engineering\
--   Interactive dashboard (Streamlit or Dash)\
--   Kubernetes deployment for scalability
+#### 5. Interactive Documentation
+```http
+GET /docs
+```
+Swagger UI for interactive API testing
 
-------------------------------------------------------------------------
+---
 
+## 📊 Model Performance
+
+### Training Details
+
+- **Algorithm**: XGBoost Regressor
+- **Dataset**: NYC Airbnb Open Data 2019 (48,895 listings)
+- **Train/Test Split**: 80/20
+- **Target**: `log1p(price)` (log-transformed for better distribution)
+
+### Hyperparameters
+
+```python
+{
+    'eta': 0.1,
+    'max_depth': 6,
+    'min_child_weight': 10,
+    'objective': 'reg:squarederror',
+    'num_boost_round': 100
+}
+```
+
+### Metrics
+
+| Metric | Value |
+|--------|-------|
+| **RMSE** | 0.482 (on log scale) |
+| **Features** | 5 input features after encoding |
+| **Model Size** | ~2MB (pickled) |
+
+### Feature Importance
+
+1. `neighbourhood_group` - Location impact
+2. `room_type` - Accommodation type
+3. `availability_365` - Supply indicator
+4. `calculated_host_listings_count` - Host experience
+5. `minimum_nights` - Booking constraint
+
+---
+
+## 📁 Project Structure
+
+```
+nyc-airbnb-prediction/
+│
+├── model_training/              # Training notebooks (not deployed)
+│   ├── AB_NYC_2019.csv         # Dataset
+│   └── Model_Deploy.ipynb      # Model training notebook
+│
+├── model.bin                    # Trained model (pickle)
+├── predict.py                   # FastAPI application
+├── test.py                      # API testing script
+│
+├── requirements.txt             # Python dependencies
+├── Dockerfile                   # Container configuration
+├── .dockerignore               # Docker ignore rules
+├── .gitignore                  # Git ignore rules
+├── .python-version             # Python version (3.11)
+│
+└── README.md                   # This file
+```
+
+---
+
+## 💻 Development
+
+### Setup Development Environment
+
+```bash
+# Clone repo
+git clone https://github.com/YOUR_USERNAME/nyc-airbnb-prediction.git
+cd nyc-airbnb-prediction
+
+# Create virtual environment
+python3.11 -m venv venv
+source venv/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Run with auto-reload (for development)
+uvicorn predict:app --reload --host 0.0.0.0 --port 9696
+```
+
+### Run Tests
+
+```bash
+# Make sure API is running first
+python test.py
+```
+
+### Retrain Model
+
+```bash
+# Navigate to training folder
+cd model_training
+
+# Run training notebook or script
+jupyter notebook Model_Deploy.ipynb
+# or
+python train.py
+
+# Copy new model.bin to root directory
+cp model.bin ../
+```
+
+---
+
+## 🌐 Deployment
+
+### Deploy to Render
+
+1. **Push to GitHub**
+```bash
+git add .
+git commit -m "Deploy to Render"
+git push origin main
+```
+
+2. **Create Web Service on Render**
+- Go to [Render.com](https://render.com)
+- Click "New +" → "Web Service"
+- Connect your GitHub repository
+- Configure:
+  - **Name**: `airbnb-price-predictor`
+  - **Runtime**: Docker
+  - **Instance Type**: Free
+- Click "Create Web Service"
+
+3. **Wait for Deployment**
+- Build takes ~5-10 minutes
+- Your API will be live at: `https://your-app.onrender.com`
+
+### Deploy to Other Platforms
+
+<details>
+<summary>Google Cloud Run</summary>
+
+```bash
+# Build and push to GCR
+gcloud builds submit --tag gcr.io/PROJECT_ID/airbnb-predictor
+
+# Deploy
+gcloud run deploy airbnb-predictor \
+  --image gcr.io/PROJECT_ID/airbnb-predictor \
+  --platform managed \
+  --region us-central1 \
+  --allow-unauthenticated
+```
+</details>
+
+<details>
+<summary>AWS Elastic Beanstalk</summary>
+
+```bash
+# Initialize EB
+eb init -p docker airbnb-predictor
+
+# Create environment
+eb create airbnb-predictor-env
+
+# Deploy
+eb deploy
+```
+</details>
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+### Development Workflow
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+### Coding Standards
+
+- Follow PEP 8 style guide
+- Add docstrings to all functions
+- Write unit tests for new features
+- Update documentation as needed
+
+---
+
+## 📝 Future Improvements
+
+- [ ] Add authentication (API keys)
+- [ ] Implement rate limiting
+- [ ] Add caching layer (Redis)
+- [ ] Store prediction history in database
+- [ ] Add model versioning and A/B testing
+- [ ] Implement CI/CD pipeline (GitHub Actions)
+- [ ] Add monitoring (Prometheus + Grafana)
+- [ ] Create frontend dashboard
+- [ ] Support batch predictions
+- [ ] Add more features (reviews, amenities)
+
+---
+
+## 📜 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+## 👤 Author
+
+**Your Name**
+- GitHub: [@YOUR_USERNAME](https://github.com/YOUR_USERNAME)
+- LinkedIn: [Your Name](https://linkedin.com/in/YOUR_PROFILE)
+- Portfolio: [yourwebsite.com](https://yourwebsite.com)
+
+---
+
+## 🙏 Acknowledgments
+
+- Dataset: [Kaggle - NYC Airbnb Open Data](https://www.kaggle.com/datasets/dgomonov/new-york-city-airbnb-open-data)
+- Inspired by: [DataTalks.Club ML Zoomcamp](https://github.com/DataTalksClub/machine-learning-zoomcamp)
+- Deployment: [Render.com](https://render.com)
+
+---
+
+## 📞 Support
+
+If you have any questions or issues, please:
+1. Check the [FAQ](#faq) section
+2. Open an [Issue](https://github.com/YOUR_USERNAME/nyc-airbnb-prediction/issues)
+3. Contact me via [email](mailto:your.email@example.com)
+
+---
+
+<div align="center">
+
+**⭐ If you find this project useful, please consider giving it a star!**
+
+Made with ❤️ by [Your Name]
+
+</div>
