@@ -2,7 +2,7 @@ import requests
 import json
 
 # Configuration
-BASE_URL = "http://localhost:9696"  # Change to your deployed URL later
+BASE_URL = "https://airbnb-price-predictor-v41y.onrender.com"  # Change to your deployed URL later
 
 def test_health():
     """Test health check endpoint"""
