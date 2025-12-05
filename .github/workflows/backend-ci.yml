@@ -1,0 +1,207 @@
+name: Backend API CI/CD
+
+# Trigger only when backend files change
+on:
+  push:
+    branches: [ master ]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-ci.yml'
+  pull_request:
+    branches: [ master ]
+    paths:
+      - 'backend/**'
+
+# Set working directory for all jobs
+defaults:
+  run:
+    working-directory: backend
+
+jobs:
+  test:
+    name: Test Backend API
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Cache pip dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-backend-pip-${{ hashFiles('backend/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-backend-pip-
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    - name: Verify project structure
+      run: |
+        echo "📁 Checking backend structure..."
+        ls -la
+        echo ""
+        echo "✅ Files present:"
+        [ -f "predict.py" ] && echo "  • predict.py"
+        [ -f "model.bin" ] && echo "  • model.bin"
+        [ -f "requirements.txt" ] && echo "  • requirements.txt"
+        [ -f "Dockerfile" ] && echo "  • Dockerfile"
+    
+    - name: Check model file exists
+      run: |
+        if [ ! -f model.bin ]; then
+          echo "❌ model.bin not found!"
+          exit 1
+        fi
+        echo "✅ model.bin found ($(du -h model.bin | cut -f1))"
+    
+    - name: Validate Python syntax
+      run: |
+        python -m py_compile predict.py
+        echo "✅ Python syntax is valid"
+    
+    - name: Test model loading
+      run: |
+        python -c "
+        import pickle
+        import sys
+        
+        try:
+            print('Loading model...')
+            with open('model.bin', 'rb') as f:
+                dv, model = pickle.load(f)
+            
+            print('✅ Model loaded successfully')
+            print(f'   DictVectorizer features: {len(dv.get_feature_names_out())}')
+            print(f'   Model type: {type(model).__name__}')
+            
+            # Validate model has expected structure
+            assert len(dv.get_feature_names_out()) > 0, 'No features found'
+            print('✅ Model validation passed')
+            
+        except Exception as e:
+            print(f'❌ Model loading failed: {e}')
+            sys.exit(1)
+        "
+    
+    - name: Lint with flake8 (optional)
+      run: |
+        pip install flake8
+        flake8 predict.py --count --select=E9,F63,F7,F82 --show-source --statistics || true
+        flake8 predict.py --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+      continue-on-error: true
+
+  docker:
+    name: Build Backend Docker Image
+    runs-on: ubuntu-latest
+    needs: test
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+    
+    - name: Build Docker image
+      working-directory: backend
+      run: |
+        echo "🐳 Building backend Docker image..."
+        docker build -t airbnb-backend:${{ github.sha }} .
+        echo "✅ Docker image built successfully"
+    
+    - name: Test Docker image
+      run: |
+        echo "🚀 Starting backend container..."
+        docker run -d --name backend-test -p 9696:9696 airbnb-backend:${{ github.sha }}
+        
+        echo "⏳ Waiting for container to start (30 seconds)..."
+        sleep 30
+        
+        echo "🔍 Testing health endpoint..."
+        curl -f http://localhost:9696/health || (
+          echo "❌ Health check failed!"
+          echo "📋 Container logs:"
+          docker logs backend-test
+          exit 1
+        )
+        
+        echo "✅ Health check passed"
+        
+        echo "🔍 Testing root endpoint..."
+        curl -f http://localhost:9696/ || (
+          echo "❌ Root endpoint failed!"
+          docker logs backend-test
+          exit 1
+        )
+        
+        echo "✅ Root endpoint passed"
+        
+        echo "🔍 Testing predict endpoint..."
+        response=$(curl -s -X POST http://localhost:9696/predict \
+          -H "Content-Type: application/json" \
+          -d '{
+            "neighbourhood_group": "manhattan",
+            "room_type": "entire home/apt",
+            "minimum_nights": 3,
+            "calculated_host_listings_count": 5,
+            "availability_365": 200
+          }')
+        
+        if echo "$response" | grep -q "price_prediction"; then
+          echo "✅ Prediction endpoint working"
+          echo "📊 Response: $response"
+        else
+          echo "❌ Prediction endpoint failed"
+          echo "📋 Response: $response"
+          docker logs backend-test
+          exit 1
+        fi
+        
+        echo ""
+        echo "🎉 All Docker tests passed!"
+        
+        # Cleanup
+        docker stop backend-test
+        docker rm backend-test
+
+  deploy:
+    name: Deploy Backend to Render
+    runs-on: ubuntu-latest
+    needs: [test, docker]
+    if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+    
+    steps:
+    - name: Trigger Deploy Hook
+      run: |
+        echo "🚀 Triggering Backend deployment..."
+        
+        # Gửi request deploy. Nếu thất bại, pipeline sẽ dừng ngay tại đây.
+        if curl -f -X GET "${{ secrets.RENDER_DEPLOY_HOOK_BACKEND }}"; then
+          echo ""
+          echo "✅ Deploy signal sent successfully!"
+        else
+          echo ""
+          echo "❌ Failed to trigger deploy. Check your Deploy Hook URL."
+          exit 1
+        fi
+
+    - name: Deployment Summary
+      if: success()
+      run: |
+        echo "----------------------------------------"
+        echo "📦 Commit: ${{ github.sha }}"
+        echo "👤 Author: ${{ github.actor }}"
+        echo "📝 Message: ${{ github.event.head_commit.message }}"
+        echo "----------------------------------------"
+        echo "🔗 Monitor Deployment: https://dashboard.render.com"
+        # SỬA LẠI LINK DƯỚI ĐÂY THÀNH LINK THẬT CỦA BẠN
+        echo "👉 Live URL: https://airbnb-price-predictor-v41y.onrender.com"

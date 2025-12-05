@@ -8,6 +8,7 @@ import xgboost as xgb
 from sklearn.metrics import root_mean_squared_error
 from sklearn.feature_extraction import DictVectorizer
 import pickle
+import os
 
 # %%
 df = pd.read_csv('AB_NYC_2019.csv')
@@ -80,9 +81,24 @@ y_pred = model.predict(dtest)
 print(root_mean_squared_error(y_test, y_pred))
 
 # %%
-output_filename = 'model.bin'
-f_out = open(output_filename, 'wb') # w is for write and b is for binary
-pickle.dump((dv, model), f_out)
-f_out.close()
+# 1. Xác định vị trí thực tế của file train.py đang nằm ở đâu
+current_dir = os.path.dirname(os.path.abspath(__file__))
+
+# 2. Xây dựng đường dẫn sang folder 'backend'
+output_path = os.path.join(current_dir, '..', 'backend', 'model.bin')
+
+# 3. Chuẩn hóa đường dẫn 
+output_path = os.path.normpath(output_path)
+
+
+# 4. Kiểm tra xem folder backend có tồn tại không trước khi lưu
+os.makedirs(os.path.dirname(output_path), exist_ok=True)
+
+# 5. Lưu file (Sử dụng 'with open' là best practice để tự động đóng file)
+with open(output_path, 'wb') as f_out:
+    pickle.dump((dv, model), f_out)
+
+print("✅ Model saved successfully inside 'backend' folder.")
+# %%
 
 

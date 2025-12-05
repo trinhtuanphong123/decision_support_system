@@ -9,6 +9,7 @@ from typing import Dict, List, Optional
 import logging
 from datetime import datetime
 import time
+import os
 
 # Setup logging
 logging.basicConfig(
@@ -436,4 +437,6 @@ def get_price_range():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host='0.0.0.0', port=9696, log_level="info")
+    # Lấy PORT từ biến môi trường của Render, nếu không có thì dùng 9696
+    port = int(os.environ.get("PORT", 9696))
+    uvicorn.run(app, host='0.0.0.0', port=port, log_level="info")

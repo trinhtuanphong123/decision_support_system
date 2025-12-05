@@ -1,0 +1,25 @@
+# =====================================
+# Frontend UI Dependencies
+# =====================================
+
+# Web Framework
+streamlit==1.31.1              # Main UI framework
+
+# HTTP Requests
+requests==2.32.5               # Call backend API
+urllib3==2.2.1                 # HTTP client
+
+# Data Visualization
+plotly==5.18.0                 # Interactive charts
+matplotlib==3.8.2              # Static plots (optional)
+
+# Data Handling
+pandas==2.2.0                  # Data manipulation (for displaying results)
+numpy==1.26.4                  # Numerical operations
+
+# UI Components (Optional but useful)
+streamlit-option-menu==0.3.12  # Better navigation menu
+streamlit-lottie==0.0.5        # Animations
+
+# Utilities
+python-dotenv==1.0.1           # Environment variables

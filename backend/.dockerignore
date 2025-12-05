@@ -1,0 +1,42 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+venv/
+env/
+ENV/
+
+# Jupyter
+*.ipynb
+.ipynb_checkpoints/
+
+# IDE
+.vscode/
+.idea/
+
+# Documentation
+README.md
+docs/
+
+# Tests (optional)
+test.py
+tests/
+
+# Training data and notebooks (not needed in production)
+model_training/
+AB_NYC_2019.csv
+*.ipynb
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

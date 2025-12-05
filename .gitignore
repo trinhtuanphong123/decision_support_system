@@ -1,52 +1,50 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
 # Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
+__pycache__
+*.pyc
+*.pyo
+*.pyd
 .Python
-env/
 venv/
+env/
 ENV/
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
 
-# Jupyter Notebook
-.ipynb_checkpoints
-# *.ipynb  # ← Commented out to allow notebooks in model_training/
+# Jupyter
+*.ipynb
+.ipynb_checkpoints/
+model_training/
 
-# PyCharm
-.idea/
-
-# VS Code
+# IDE
 .vscode/
-
-# Environment variables
-.env
-.env.local
+.idea/
+*.swp
+*.swo
 
 # OS
 .DS_Store
 Thumbs.db
 
+# Documentation
+README.md
+*.md
+
+# Tests
+test.py
+tests/
+
 # Logs
 *.log
+logs/
 
-# Data files (optional - keep if small)
-# *.csv
+# Data files (model.bin is needed, but data files are not)
+model_training/AB_NYC_2019.csv
+*.csv
 
-# Docker
-.dockerignore
-docker-compose.yml
+# Keep these files:
+# - predict.py (API server)
+# - model.bin (trained model)
+# - requirements.txt (dependencies)

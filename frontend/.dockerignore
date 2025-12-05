@@ -1,0 +1,66 @@
+# =====================================
+# Frontend Docker Ignore
+# =====================================
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+*.egg-info/
+
+# Streamlit
+.streamlit/secrets.toml       # Don't include secrets
+*.streamlit/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Documentation
+README.md
+*.md
+docs/
+
+# Tests
+test_*.py
+tests/
+*_test.py
+
+# Logs
+*.log
+logs/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Temporary files
+*.tmp
+*.temp
+*.cache
+
+# Build artifacts
+dist/
+build/
+*.egg
+
+# Keep these files in Docker:
+# - app.py (main application)
+# - requirements.txt (dependencies)
+# - Any assets/ or static/ folders
+# - config files (if any)
