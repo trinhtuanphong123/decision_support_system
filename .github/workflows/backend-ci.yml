@@ -1,6 +1,5 @@
 name: Backend API CI/CD
 
-# Trigger only when backend files change
 on:
   push:
     branches: [ master ]
@@ -11,11 +10,6 @@ on:
     branches: [ master ]
     paths:
       - 'backend/**'
-
-# Set working directory for all jobs
-defaults:
-  run:
-    working-directory: backend
 
 jobs:
   test:
@@ -40,11 +34,13 @@ jobs:
           ${{ runner.os }}-backend-pip-
     
     - name: Install dependencies
+      working-directory: ./backend
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
     
     - name: Verify project structure
+      working-directory: ./backend
       run: |
         echo "📁 Checking backend structure..."
         ls -la
@@ -56,6 +52,7 @@ jobs:
         [ -f "Dockerfile" ] && echo "  • Dockerfile"
     
     - name: Check model file exists
+      working-directory: ./backend
       run: |
         if [ ! -f model.bin ]; then
           echo "❌ model.bin not found!"
@@ -64,11 +61,13 @@ jobs:
         echo "✅ model.bin found ($(du -h model.bin | cut -f1))"
     
     - name: Validate Python syntax
+      working-directory: ./backend
       run: |
         python -m py_compile predict.py
         echo "✅ Python syntax is valid"
     
     - name: Test model loading
+      working-directory: ./backend
       run: |
         python -c "
         import pickle
@@ -93,6 +92,7 @@ jobs:
         "
     
     - name: Lint with flake8 (optional)
+      working-directory: ./backend
       run: |
         pip install flake8
         flake8 predict.py --count --select=E9,F63,F7,F82 --show-source --statistics || true
@@ -112,9 +112,9 @@ jobs:
       uses: docker/setup-buildx-action@v2
     
     - name: Build Docker image
-      working-directory: backend
       run: |
         echo "🐳 Building backend Docker image..."
+        cd backend
         docker build -t airbnb-backend:${{ github.sha }} .
         echo "✅ Docker image built successfully"
     
@@ -184,7 +184,6 @@ jobs:
       run: |
         echo "🚀 Triggering Backend deployment..."
         
-        # Gửi request deploy. Nếu thất bại, pipeline sẽ dừng ngay tại đây.
         if curl -f -X GET "${{ secrets.RENDER_DEPLOY_HOOK_BACKEND }}"; then
           echo ""
           echo "✅ Deploy signal sent successfully!"
@@ -203,5 +202,4 @@ jobs:
         echo "📝 Message: ${{ github.event.head_commit.message }}"
         echo "----------------------------------------"
         echo "🔗 Monitor Deployment: https://dashboard.render.com"
-        # SỬA LẠI LINK DƯỚI ĐÂY THÀNH LINK THẬT CỦA BẠN
         echo "👉 Live URL: https://airbnb-price-predictor-v41y.onrender.com"
