@@ -1,3 +1,7 @@
+# =====================================
+# Backend Docker Ignore - Updated
+# =====================================
+
 # Git
 .git
 .gitignore
@@ -12,31 +16,60 @@ __pycache__
 venv/
 env/
 ENV/
-
-# Jupyter
-*.ipynb
-.ipynb_checkpoints/
+*.egg-info/
+.coverage
+.pytest_cache/
+htmlcov/
 
 # IDE
 .vscode/
 .idea/
-
-# Documentation
-README.md
-docs/
-
-# Tests (optional)
-test.py
-tests/
-
-# Training data and notebooks (not needed in production)
-model_training/
-AB_NYC_2019.csv
-*.ipynb
+*.swp
+*.swo
 
 # OS
 .DS_Store
 Thumbs.db
 
-# Logs
+# Documentation
+README.md
+docs/
+*.md
+
+# Tests (optional - uncomment to exclude tests from image)
+# test/
+# tests/
+# *_test.py
+# test_*.py
+
+# Training & Development
+*.ipynb
+.ipynb_checkpoints/
+model_training/
+notebooks/
+
+# Data files (keep model.bin!)
+AB_NYC_2019.csv
+*.csv
+*.xlsx
+
+# Logs (will be generated in container)
 *.log
+logs/
+
+# Metrics exports (will be generated)
+metrics.json
+*.json
+
+# Config files for local development only
+.env
+.env.local
+pytest.ini
+.coveragerc
+
+# Keep these files IN the image:
+# - predict.py (API server)
+# - monitoring.py (monitoring system)
+# - data_validator.py (validation)
+# - model.bin (trained model)
+# - requirements.txt (dependencies)

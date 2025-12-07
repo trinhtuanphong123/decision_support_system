@@ -12,5 +12,8 @@ seaborn==0.13.2
 # Validation
 pydantic==2.12.4
 
-# For testing (optional in production)
-requests==2.32.5
+# For testing
+pytest==7.4.3
+pytest-cov==4.1.0
+pytest-timeout==2.2.0
+coverage==7.3.2

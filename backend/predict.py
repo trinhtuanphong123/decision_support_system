@@ -10,6 +10,10 @@ import logging
 from datetime import datetime
 import time
 import os
+from monitoring import model_monitor, get_monitor
+from data_validator import data_validator, get_validator
+
+
 
 # Setup logging
 logging.basicConfig(
@@ -114,6 +118,41 @@ class StatsResponse(BaseModel):
     total_requests: int
     average_response_time_ms: float
     uptime_hours: float
+
+# ==========================================
+# NEW RESPONSE MODELS (Thêm sau PredictResponse)
+# ==========================================
+
+class PredictResponseWithValidation(BaseModel):
+    """Enhanced prediction response with validation info"""
+    price_prediction: float
+    confidence: str
+    input_features: Optional[Dict] = None
+    data_quality: Optional[Dict] = None  # NEW: Quality report
+    processing_time_ms: Optional[float] = None  # NEW: Processing time
+    warnings: Optional[List[str]] = None  # NEW: Validation warnings
+
+class MetricsResponse(BaseModel):
+    """Monitoring metrics response"""
+    total_predictions: int
+    error_count: int
+    error_rate: float
+    confidence_distribution: Dict
+    predictions_by_neighbourhood: Dict
+    predictions_by_room_type: Dict
+    price_statistics: Dict
+    performance: Dict
+
+class DashboardResponse(BaseModel):
+    """Dashboard data response"""
+    overview: Dict
+    confidence_breakdown: Dict
+    neighbourhood_breakdown: Dict
+    room_type_breakdown: Dict
+    price_range: Dict
+    drift_detection: Dict
+    recent_activity: List[Dict]
+
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -251,10 +290,251 @@ def get_stats():
         uptime_hours=round(uptime, 2)
     )
 
-@app.post('/predict', response_model=PredictResponse, tags=["Prediction"])
+
+# ==========================================
+# MONITORING ENDPOINTS
+# Thêm các endpoints này vào cuối file predict.py
+# (sau endpoint /price-range, trước if __name__)
+# ==========================================
+
+@app.get("/metrics", response_model=MetricsResponse, tags=["Monitoring"])
+def get_metrics():
+    """
+    Get comprehensive model and system metrics
+    
+    Returns detailed metrics including:
+    - Total predictions made
+    - Error rates
+    - Confidence level distribution
+    - Predictions breakdown by neighbourhood and room type
+    - Price statistics (min, max, average)
+    - Performance metrics (avg response time)
+    
+    **Example Response:**
+    ```json
+    {
+        "total_predictions": 150,
+        "error_count": 2,
+        "error_rate": 0.013,
+        "confidence_distribution": {
+            "high": 80,
+            "medium": 60,
+            "low": 10
+        },
+        "price_statistics": {
+            "min": 45.0,
+            "max": 450.0,
+            "average": 125.50
+        }
+    }
+    ```
+    """
+    monitor = get_monitor()
+    return monitor.get_metrics()
+
+
+@app.get("/dashboard", response_model=DashboardResponse, tags=["Monitoring"])
+def get_dashboard_data():
+    """
+    Get monitoring dashboard data
+    
+    Returns formatted data optimized for visualization dashboards:
+    - Overview statistics
+    - Confidence breakdown
+    - Geographical distribution
+    - Room type distribution
+    - Price range analytics
+    - Data drift detection results
+    - Recent prediction activity
+    
+    **Use this endpoint for:**
+    - Building monitoring dashboards
+    - Generating reports
+    - System health visualization
+    """
+    monitor = get_monitor()
+    return monitor.get_dashboard_data()
+
+
+@app.get("/drift", tags=["Monitoring"])
+def check_data_drift():
+    """
+    Check for data drift in input features
+    
+    Compares recent input data distribution with baseline
+    to detect potential model performance degradation.
+    
+    **Drift Detection Method:**
+    - Compares first 100 predictions (baseline) vs last 100 (recent)
+    - Calculates percentage change in feature averages
+    - Flags drift if change exceeds 20%
+    
+    **Returns:**
+    - Drift status for each feature (stable/drifted)
+    - Baseline vs recent averages
+    - Drift percentage
+    
+    **Example Response:**
+    ```json
+    {
+        "drift_detection": {
+            "minimum_nights": {
+                "baseline_avg": 5.2,
+                "recent_avg": 7.8,
+                "drift_percentage": 50.0,
+                "status": "drifted"
+            },
+            "availability_365": {
+                "baseline_avg": 180,
+                "recent_avg": 185,
+                "drift_percentage": 2.78,
+                "status": "stable"
+            }
+        },
+        "timestamp": "2024-12-07T10:30:00",
+        "status": "ok"
+    }
+    ```
+    """
+    monitor = get_monitor()
+    drift_result = monitor.detect_data_drift()
+    
+    return {
+        "drift_detection": drift_result,
+        "timestamp": datetime.now().isoformat(),
+        "status": "ok" if drift_result != {"status": "insufficient_data"} else "insufficient_data"
+    }
+
+
+@app.get("/recent-predictions", tags=["Monitoring"])
+def get_recent_predictions(limit: int = 20):
+    """
+    Get recent prediction history
+    
+    **Query Parameters:**
+    - limit: Number of predictions to return (default: 20, max: 100)
+    
+    **Returns:**
+    List of recent predictions with:
+    - Timestamp
+    - Input features
+    - Predicted price
+    - Confidence level
+    - Processing time
+    
+    **Example:**
+    ```
+    GET /recent-predictions?limit=10
+    ```
+    """
+    monitor = get_monitor()
+    
+    # Cap limit at 100
+    limit = min(limit, 100)
+    
+    return {
+        "predictions": monitor.get_recent_predictions(limit),
+        "total_in_history": len(monitor.prediction_history),
+        "limit": limit
+    }
+
+
+@app.post("/export-metrics", tags=["Monitoring"])
+def export_metrics():
+    """
+    Export current metrics to JSON file
+    
+    Saves a snapshot of current metrics to `metrics.json` file
+    in the working directory.
+    
+    **Useful for:**
+    - Periodic reporting
+    - Offline analysis
+    - Creating backups of metrics
+    - Generating reports
+    
+    **Returns:**
+    - Success/failure status
+    - Export timestamp
+    - File location
+    """
+    monitor = get_monitor()
+    success = monitor.export_metrics("metrics.json")
+    
+    if success:
+        return {
+            "status": "success",
+            "message": "Metrics exported successfully",
+            "file": "metrics.json",
+            "timestamp": datetime.now().isoformat()
+        }
+    else:
+        raise HTTPException(
+            status_code=500, 
+            detail="Failed to export metrics"
+        )
+
+
+@app.get("/data-quality", tags=["Monitoring"])
+def check_data_quality(
+    neighbourhood_group: str,
+    room_type: str,
+    minimum_nights: int,
+    calculated_host_listings_count: int,
+    availability_365: int
+):
+    """
+    Check data quality without making prediction
+    
+    Validates input data and returns quality report without
+    actually calling the ML model.
+    
+    **Query Parameters:**
+    All the same parameters as /predict endpoint
+    
+    **Returns:**
+    - Quality score (0-100)
+    - Quality level (excellent/good/fair/poor)
+    - Validation errors
+    - Warnings
+    - Outlier detection results
+    - Recommendations
+    
+    **Example:**
+    ```
+    GET /data-quality?neighbourhood_group=manhattan&room_type=entire%20home/apt&minimum_nights=3&calculated_host_listings_count=5&availability_365=200
+    ```
+    """
+    validator = get_validator()
+    
+    data = {
+        "neighbourhood_group": neighbourhood_group,
+        "room_type": room_type,
+        "minimum_nights": minimum_nights,
+        "calculated_host_listings_count": calculated_host_listings_count,
+        "availability_365": availability_365
+    }
+    
+    quality_report = validator.get_data_quality_score(data)
+    
+    return quality_report
+
+
+# ==========================================
+# UPDATED PREDICT ENDPOINT
+# Thay thế hàm predict() cũ bằng version này
+# ==========================================
+
+@app.post('/predict', response_model=PredictResponseWithValidation, tags=["Prediction"])
 def predict(request: ListingRequest):
     """
-    Predict Airbnb listing price
+    Predict Airbnb listing price with data validation and monitoring
+    
+    **Enhanced with:**
+    - Data quality validation
+    - Outlier detection
+    - Performance monitoring
+    - Detailed warnings
     
     **Example Request:**
     ```json
@@ -272,7 +552,13 @@ def predict(request: ListingRequest):
     {
         "price_prediction": 157.42,
         "confidence": "medium",
-        "input_features": {...}
+        "input_features": {...},
+        "data_quality": {
+            "quality_score": 95,
+            "quality_level": "excellent"
+        },
+        "processing_time_ms": 45.2,
+        "warnings": []
     }
     ```
     """
@@ -281,9 +567,48 @@ def predict(request: ListingRequest):
     if not MODEL_LOADED:
         raise HTTPException(status_code=503, detail="Model not loaded. Service unavailable.")
     
+    # Start timing
+    start_time = time.time()
+    
     try:
+        # ==========================================
+        # STEP 1: Data Validation
+        # ==========================================
+        validator = get_validator()
+        input_data = request.model_dump()
+        validation_data = input_data.copy()
+
+        # Map ngược từ số ra chữ (Decode)
+        inv_neighbourhood = {v: k for k, v in NEIGHBOURHOOD_ENCODING.items()}
+        inv_room_type = {v: k for k, v in ROOM_TYPE_ENCODING.items()}
+        
+        # Nếu đang là số thì đổi lại thành chữ
+        if isinstance(validation_data["neighbourhood_group"], int):
+            validation_data["neighbourhood_group"] = inv_neighbourhood.get(validation_data["neighbourhood_group"], "unknown")
+            
+        if isinstance(validation_data["room_type"], int):
+            validation_data["room_type"] = inv_room_type.get(validation_data["room_type"], "unknown")
+        
+        # Get quality report
+        quality_report = validator.get_data_quality_score(validation_data)
+        
+        # Check if data is valid
+        if not quality_report["is_valid"]:
+            # Data has errors - return error with details
+            raise HTTPException(
+                status_code=400, 
+                detail={
+                    "error": "Invalid input data",
+                    "quality_report": quality_report
+                }
+            )
+        
+        # ==========================================
+        # STEP 2: Model Prediction
+        # ==========================================
+        
         # Transform input
-        X = dv.transform([request.model_dump()])
+        X = dv.transform([input_data])
         
         # Get feature names
         features = list(dv.get_feature_names_out())
@@ -306,19 +631,74 @@ def predict(request: ListingRequest):
         else:
             confidence = "high"
         
+        # Calculate processing time
+        processing_time_ms = (time.time() - start_time) * 1000
+        
+        # ==========================================
+        # STEP 3: Log to Monitoring System
+        # ==========================================
+        monitor = get_monitor()
+        monitor.log_prediction(
+            input_features=validation_data,
+            prediction=price,
+            confidence=confidence,
+            processing_time_ms=processing_time_ms
+        )
+        
+        # ==========================================
+        # STEP 4: Increment Counter
+        # ==========================================
         PREDICTION_COUNT += 1
         
-        logger.info(f"Prediction made: ${price} (confidence: {confidence})")
+        # ==========================================
+        # STEP 5: Logging
+        # ==========================================
+        logger.info(
+            f"Prediction made: ${price} (confidence: {confidence}, "
+            f"quality: {quality_report['quality_level']}, "
+            f"time: {processing_time_ms:.2f}ms)"
+        )
         
-        return PredictResponse(
+        # ==========================================
+        # STEP 6: Return Enhanced Response
+        # ==========================================
+        return PredictResponseWithValidation(
             price_prediction=price,
             confidence=confidence,
-            input_features=request.model_dump()
+            input_features=validation_data,
+            data_quality={
+                "quality_score": quality_report["quality_score"],
+                "quality_level": quality_report["quality_level"],
+                "outliers_detected": any(
+                    v for k, v in quality_report["outliers"].items() 
+                    if not k.endswith("_z_score") and v
+                )
+            },
+            processing_time_ms=round(processing_time_ms, 2),
+            warnings=quality_report["warnings"]
         )
     
+    except HTTPException:
+        # Re-raise HTTP exceptions (validation errors)
+        raise
+    
     except Exception as e:
+        # ==========================================
+        # Error Handling with Monitoring
+        # ==========================================
         logger.error(f"Prediction error: {e}")
-        raise HTTPException(status_code=500, detail=f"Prediction failed: {str(e)}")
+        
+        # Log error to monitor
+        monitor = get_monitor()
+        monitor.log_error(
+            error_type="prediction_error",
+            error_message=str(e)
+        )
+        
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Prediction failed: {str(e)}"
+        )
 
 @app.post('/predict/batch', response_model=BatchPredictResponse, tags=["Prediction"])
 def batch_predict(request: BatchListingRequest):
