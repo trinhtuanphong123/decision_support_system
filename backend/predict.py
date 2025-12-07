@@ -576,9 +576,21 @@ def predict(request: ListingRequest):
         # ==========================================
         validator = get_validator()
         input_data = request.model_dump()
+        validation_data = input_data.copy()
+
+        # Map ngược từ số ra chữ (Decode)
+        inv_neighbourhood = {v: k for k, v in NEIGHBOURHOOD_ENCODING.items()}
+        inv_room_type = {v: k for k, v in ROOM_TYPE_ENCODING.items()}
+        
+        # Nếu đang là số thì đổi lại thành chữ
+        if isinstance(validation_data["neighbourhood_group"], int):
+            validation_data["neighbourhood_group"] = inv_neighbourhood.get(validation_data["neighbourhood_group"], "unknown")
+            
+        if isinstance(validation_data["room_type"], int):
+            validation_data["room_type"] = inv_room_type.get(validation_data["room_type"], "unknown")
         
         # Get quality report
-        quality_report = validator.get_data_quality_score(input_data)
+        quality_report = validator.get_data_quality_score(validation_data)
         
         # Check if data is valid
         if not quality_report["is_valid"]:
@@ -627,7 +639,7 @@ def predict(request: ListingRequest):
         # ==========================================
         monitor = get_monitor()
         monitor.log_prediction(
-            input_features=input_data,
+            input_features=validation_data,
             prediction=price,
             confidence=confidence,
             processing_time_ms=processing_time_ms
@@ -653,7 +665,7 @@ def predict(request: ListingRequest):
         return PredictResponseWithValidation(
             price_prediction=price,
             confidence=confidence,
-            input_features=input_data,
+            input_features=validation_data,
             data_quality={
                 "quality_score": quality_report["quality_score"],
                 "quality_level": quality_report["quality_level"],
