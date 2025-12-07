@@ -10,8 +10,8 @@ import logging
 from datetime import datetime
 import time
 import os
-from monitoring import model_monitor, get_monitor
-from data_validator import data_validator, get_validator
+from backend.monitoring import model_monitor, get_monitor
+from backend.data_validator import data_validator, get_validator
 
 
 # Setup logging
