@@ -1,4 +1,3 @@
-# %%
 import pandas as pd
 import numpy as np
 import xgboost as xgb
@@ -15,7 +14,7 @@ print("Loading data...")
 
 # Xác định đường dẫn tới file CSV dựa trên vị trí của file script hiện tại
 # Điều này giúp code chạy được bất kể bạn gọi lệnh python từ thư mục nào
-current_dir = os.path.dirname(os.path.abspath(__file__))
+current_dir = os.path.dirname(os.path.abspath(__file__)) if '__file__' in locals() else os.getcwd()
 csv_path = os.path.join(current_dir, 'AB_NYC_2019.csv')
 
 # Kiểm tra xem file có tồn tại không trước khi đọc
@@ -138,6 +137,7 @@ y_true = np.expm1(y_test)
 
 # Tính RMSE trên giá thực
 rmse = np.sqrt(mean_squared_error(y_true, y_pred))
+
 print(f"✅ Final RMSE on Test Set: {rmse:.4f} USD")
 
 # %%
